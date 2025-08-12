@@ -7,6 +7,8 @@ on:
 jobs:
   diff-diagrams:
     runs-on: ubuntu-latest
+    env:
+      CHROMIUM_FLAGS: --no-sandbox
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v4
@@ -30,26 +32,26 @@ jobs:
         run: |
           mkdir old new
 
-          # Extrair arquivos antigos (base)
+          # Extract old files
           for file in ${{ steps.changed-files.outputs.files }}; do
             git show ${{ github.event.pull_request.base.sha }}:$file > old/$(basename $file)
           done
 
-          # Copiar arquivos atuais (head)
+          # Copy new files
           for file in ${{ steps.changed-files.outputs.files }}; do
             cp $file new/
           done
 
-          # Gerar SVG antigo
-          for file in old/*; do
-            npx mmdc -i "$file" -o "${file%.mmd}-old.svg" --no-sandbox
+          # Generate SVGs from old files
+          for file in old/*.mmd; do
+            mmdc -i "$file" -o "${file%.mmd}-old.svg"
           done
 
-          # Gerar SVG novo
-          for file in new/*; do
-            npx mmdc -i "$file" -o "${file%.mmd}-new.svg" --no-sandbox
+          # Generate SVGs from new files
+          for file in new/*.mmd; do
+            mmdc -i "$file" -o "${file%.mmd}-new.svg"
           done
-
+          
       - name: Create comment with diagrams
         uses: actions/github-script@v6
         with:
