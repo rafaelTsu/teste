@@ -1,0 +1,18 @@
+erDiagram
+    USUARIO ||--o{ PEDIDO : faz
+    PEDIDO ||--|{ ITEM : contem
+    USUARIO {
+        int id
+        string nome
+        string email
+    }
+    PEDIDO {
+        int id
+        date data
+        decimal total
+    }
+    ITEM {
+        int id
+        string descricao
+        decimal preco
+    }
