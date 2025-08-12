@@ -1,0 +1,43 @@
+name: Publicar Diagramas Mermaid
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '**.mmd'
+      - 'site/**'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Instalar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Instalar mermaid-cli
+        run: npm install -g @mermaid-js/mermaid-cli
+
+      - name: Converter .mmd para .svg
+        run: |
+          mkdir -p public/arquitetura
+          mkdir -p public/bd
+          for file in $(find arquitetura -name "*.mmd"); do
+            mmdc -i "$file" -o "public/$file.svg"
+          done
+          for file in $(find bd -name "*.mmd"); do
+            mmdc -i "$file" -o "public/$file.svg"
+          done
+          cp -r site/* public/
+
+      - name: Deploy no GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
