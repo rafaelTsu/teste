@@ -10,47 +10,37 @@ jobs:
     env:
       CHROMIUM_FLAGS: --no-sandbox
     steps:
-      - name: Checkout PR branch
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Install mermaid-cli
-        run: npm install -g @mermaid-js/mermaid-cli
+      - run: npm install -g @mermaid-js/mermaid-cli
 
-      - name: Get changed .mmd files
-        id: changed-files
-        run: |
-          echo "::set-output name=files::$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | grep '\.mmd$' || true)"
+      - run: |
+          echo '{ "args": ["--no-sandbox", "--disable-setuid-sandbox"] }' > puppeteer-config.json
 
-      - name: Generate SVGs for old and new versions
-        run: |
           mkdir old new
 
-          # Extract old files
           for file in ${{ steps.changed-files.outputs.files }}; do
             git show ${{ github.event.pull_request.base.sha }}:$file > old/$(basename $file)
           done
 
-          # Copy new files
           for file in ${{ steps.changed-files.outputs.files }}; do
             cp $file new/
           done
 
-          # Generate SVGs from old files
           for file in old/*.mmd; do
-            mmdc -i "$file" -o "${file%.mmd}-old.svg"
+            mmdc -i "$file" -o "${file%.mmd}-old.svg" --puppeteer-config puppeteer-config.json
           done
 
-          # Generate SVGs from new files
           for file in new/*.mmd; do
-            mmdc -i "$file" -o "${file%.mmd}-new.svg"
+            mmdc -i "$file" -o "${file%.mmd}-new.svg" --puppeteer-config puppeteer-config.json
           done
+
           
       - name: Create comment with diagrams
         uses: actions/github-script@v6
