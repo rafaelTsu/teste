@@ -41,6 +41,7 @@ jobs:
             mmdc -i "$file" -o "${file%.mmd}-new.svg" --puppeteer-config puppeteer-config.json
           done
 
+
           
       - name: Create comment with diagrams
         uses: actions/github-script@v6
