@@ -1,0 +1,112 @@
+name: PR Mermaid Diagram Diff
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  diff-diagrams:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install mermaid-cli
+        run: npm install -g @mermaid-js/mermaid-cli
+
+      - name: Get changed .mmd files
+        id: changed-files
+        run: |
+          echo "::set-output name=files::$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | grep '\.mmd$' || true)"
+
+      - name: Generate SVGs for old and new versions
+        run: |
+          mkdir old new
+
+          # Extrair arquivos antigos (base)
+          for file in ${{ steps.changed-files.outputs.files }}; do
+            git show ${{ github.event.pull_request.base.sha }}:$file > old/$(basename $file)
+          done
+
+          # Copiar arquivos atuais (head)
+          for file in ${{ steps.changed-files.outputs.files }}; do
+            cp $file new/
+          done
+
+          # Gerar SVG antigo
+          for file in old/*; do
+            npx mmdc -i "$file" -o "${file%.mmd}-old.svg" --no-sandbox
+          done
+
+          # Gerar SVG novo
+          for file in new/*; do
+            npx mmdc -i "$file" -o "${file%.mmd}-new.svg" --no-sandbox
+          done
+
+      - name: Create comment with diagrams
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            function svgToBase64(filepath) {
+              const svg = fs.readFileSync(filepath, 'utf8');
+              const base64 = Buffer.from(svg).toString('base64');
+              return `data:image/svg+xml;base64,${base64}`;
+            }
+
+            const files = fs.readdirSync('old').filter(f => f.endsWith('.mmd'));
+
+            let comment = '### Comparação de diagramas Mermaid\n\n';
+
+            for (const file of files) {
+              const baseName = file.replace('.mmd', '');
+
+              const oldSvgPath = path.join('old', `${baseName}-old.svg`);
+              const newSvgPath = path.join('new', `${baseName}-new.svg`);
+
+              if (fs.existsSync(oldSvgPath) && fs.existsSync(newSvgPath)) {
+                const oldBase64 = svgToBase64(oldSvgPath);
+                const newBase64 = svgToBase64(newSvgPath);
+
+                comment += `#### ${baseName}\n\n`;
+                comment += `<table><tr><th>Antes</th><th>Depois</th></tr><tr>`;
+                comment += `<td><img src="${oldBase64}" alt="Antes"/></td>`;
+                comment += `<td><img src="${newBase64}" alt="Depois"/></td>`;
+                comment += `</tr></table>\n\n`;
+              }
+            }
+
+            // Postar ou atualizar comentário
+            const prNumber = context.payload.pull_request.number;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber
+            });
+
+            const botComment = comments.find(c => c.user.login === 'github-actions[bot]' && c.body.includes('### Comparação de diagramas Mermaid'));
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: comment,
+              });
+            }
