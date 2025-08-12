@@ -1,28 +1,49 @@
-name: Gerar Diagramas Mermaid e Publicar
+name: Publicar diagramas Mermaid
 
 on:
   push:
     branches:
-      - main  # ou a branch que você usa
+      - main  # ou sua branch principal
+    paths:
+      - 'arquitetura/diagramas/*.mmd'
+      - 'bd/diagramas/*.mmd'
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Clonar repositório
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Instalar Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Instalar dependências do Chromium
-        run: sudo apt-get update && sudo apt-get install -y \
-             libnss3 libatk1.0-0 libatk-bridge2.0-0 libx11-xcb1 \
-             libxcb-dri3-0 libxcomposite1 libxdamage1 libxfixes3 \
-             libxrandr2 libgbm1 libasound2
+      - name: Instalar dependências Chromium
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            ca-certificates \
+            fonts-liberation \
+            libatk-bridge2.0-0 \
+            libatk1.0-0 \
+            libatspi2.0-0 \
+            libcups2 \
+            libdbus-1-3 \
+            libdrm2 \
+            libgbm1 \
+            libgtk-3-0 \
+            libnspr4 \
+            libx11-xcb1 \
+            libxcomposite1 \
+            libxdamage1 \
+            libxfixes3 \
+            libxshmfence1 \
+            libxtst6 \
+            lsb-release \
+            xdg-utils
 
       - name: Instalar Mermaid CLI
         run: npm install -g @mermaid-js/mermaid-cli
@@ -30,7 +51,7 @@ jobs:
       - name: Criar pastas de saída
         run: mkdir -p public/arquitetura public/bd
 
-      - name: Converter diagramas .mmd para .svg
+      - name: Gerar SVGs dos diagramas
         run: |
           for file in arquitetura/diagramas/*.mmd; do
             npx mmdc -i "$file" -o "public/arquitetura/$(basename "$file" .mmd).svg" --no-sandbox
