@@ -26,13 +26,15 @@ jobs:
 
       - name: Converter .mmd para .svg
         run: |
-          mkdir -p public/arquitetura
-          mkdir -p public/bd
           for file in $(find arquitetura -name "*.mmd"); do
-            mmdc -i "$file" -o "public/$file.svg"
+            out="public/${file}.svg"
+            mkdir -p "$(dirname "$out")"
+            mmdc -i "$file" -o "$out"
           done
           for file in $(find bd -name "*.mmd"); do
-            mmdc -i "$file" -o "public/$file.svg"
+            out="public/${file}.svg"
+            mkdir -p "$(dirname "$out")"
+            mmdc -i "$file" -o "$out"
           done
           cp -r site/* public/
 
