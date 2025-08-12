@@ -9,34 +9,18 @@ on:
       - 'site/**'
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout do repositório
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Instalar Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Instalar mermaid-cli
-        run: npm install -g @mermaid-js/mermaid-cli
-
-      - name: Converter .mmd para .svg
+      - name: Copiar arquivos para pasta pública
         run: |
-          for file in $(find arquitetura -name "*.mmd"); do
-            out="public/${file}.svg"
-            mkdir -p "$(dirname "$out")"
-            mmdc -i "$file" -o "$out"
-          done
-          for file in $(find bd -name "*.mmd"); do
-            out="public/${file}.svg"
-            mkdir -p "$(dirname "$out")"
-            mmdc -i "$file" -o "$out"
-          done
+          mkdir -p public
           cp -r site/* public/
+          cp -r arquitetura public/
+          cp -r bd public/
 
       - name: Deploy no GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
