@@ -1,0 +1,47 @@
+name: Build and Publish Mermaid Diagrams
+
+on:
+  push:
+    paths:
+      - 'arquitetura/diagramas/*.mmd'
+      - 'bd/diagramas/*.mmd'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Mermaid CLI
+        run: npm install -g @mermaid-js/mermaid-cli
+
+      - name: Generate SVGs
+        run: |
+          mkdir -p public/arquitetura
+          mkdir -p public/bd
+          for file in arquitetura/diagramas/*.mmd; do
+            mmdc -i "$file" -o "public/arquitetura/$(basename "$file" .mmd).svg"
+          done
+          for file in bd/diagramas/*.mmd; do
+            mmdc -i "$file" -o "public/bd/$(basename "$file" .mmd).svg"
+          done
+
+      - name: Generate index.html
+        run: |
+          echo "<html><head><title>Diagramas</title></head><body><h1>Diagramas do Projeto</h1>" > public/index.html
+          echo "<h2>Arquitetura</h2>" >> public/index.html
+          for svg in public/arquitetura/*.svg; do
+            echo "<h3>$(basename "$svg" .svg)</h3><img src='./arquitetura/$(basename "$svg")' style='max-width:100%; border:1px solid #ccc;'><hr>" >> public/index.html
+          done
+          echo "<h2>Banco de Dados</h2>" >> public/index.html
+          for svg in public/bd/*.svg; do
+            echo "<h3>$(basename "$svg" .svg)</h3><img src='./bd/$(basename "$svg")' style='max-width:100%; border:1px solid #ccc;'><hr>" >> public/index.html
+          done
+          echo "</body></html>" >> public/index.html
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
