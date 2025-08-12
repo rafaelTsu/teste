@@ -1,0 +1,46 @@
+name: Gerar Diagramas Mermaid e Publicar
+
+on:
+  push:
+    branches:
+      - main  # ou a branch que você usa
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clonar repositório
+        uses: actions/checkout@v4
+
+      - name: Instalar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Instalar dependências do Chromium
+        run: sudo apt-get update && sudo apt-get install -y \
+             libnss3 libatk1.0-0 libatk-bridge2.0-0 libx11-xcb1 \
+             libxcb-dri3-0 libxcomposite1 libxdamage1 libxfixes3 \
+             libxrandr2 libgbm1 libasound2
+
+      - name: Instalar Mermaid CLI
+        run: npm install -g @mermaid-js/mermaid-cli
+
+      - name: Criar pastas de saída
+        run: mkdir -p public/arquitetura public/bd
+
+      - name: Converter diagramas .mmd para .svg
+        run: |
+          for file in arquitetura/diagramas/*.mmd; do
+            npx mmdc -i "$file" -o "public/arquitetura/$(basename "$file" .mmd).svg" --no-sandbox
+          done
+          for file in bd/diagramas/*.mmd; do
+            npx mmdc -i "$file" -o "public/bd/$(basename "$file" .mmd).svg" --no-sandbox
+          done
+
+      - name: Publicar no GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
