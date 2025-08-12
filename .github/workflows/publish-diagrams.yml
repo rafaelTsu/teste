@@ -54,11 +54,12 @@ jobs:
       - name: Gerar SVGs dos diagramas
         run: |
           for file in arquitetura/diagramas/*.mmd; do
-            npx mmdc -i "$file" -o "public/arquitetura/$(basename "$file" .mmd).svg" --no-sandbox
+            npx mmdc -i "$file" -o "public/arquitetura/$(basename "$file" .mmd).svg" --puppeteerConfig '{ "args": ["--no-sandbox", "--disable-setuid-sandbox"] }'
           done
           for file in bd/diagramas/*.mmd; do
-            npx mmdc -i "$file" -o "public/bd/$(basename "$file" .mmd).svg" --no-sandbox
+            npx mmdc -i "$file" -o "public/bd/$(basename "$file" .mmd).svg" --puppeteerConfig '{ "args": ["--no-sandbox", "--disable-setuid-sandbox"] }'
           done
+
 
       - name: Publicar no GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
