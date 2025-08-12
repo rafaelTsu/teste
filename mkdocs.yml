@@ -1,0 +1,10 @@
+site_name: Documentação do Projeto
+
+plugins:
+  - search
+  - mermaid2
+
+nav:
+  - Home: index.md
+  - Arquitetura: arquitetura.md
+  - Banco de Dados: bd.md
